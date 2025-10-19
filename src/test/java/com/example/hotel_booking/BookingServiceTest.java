@@ -1,10 +1,10 @@
 package com.example.hotel_booking;
 
-import com.example.hotel_booking.booking_service.DTO.BookingDTO;
-import com.example.hotel_booking.booking_service.DTO.CreateBookingRequest;
-import com.example.hotel_booking.booking_service.Entity.BookingStatus;
-import com.example.hotel_booking.booking_service.Service.BookingService;
-import com.example.hotel_booking.booking_service.Service.HotelServiceClient;
+import com.example.hotel_booking.booking_service.dto.BookingDTO;
+import com.example.hotel_booking.booking_service.dto.CreateBookingRequest;
+import com.example.hotel_booking.booking_service.entity.BookingStatus;
+import com.example.hotel_booking.booking_service.service.BookingService;
+import com.example.hotel_booking.booking_service.service.HotelServiceClient;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;

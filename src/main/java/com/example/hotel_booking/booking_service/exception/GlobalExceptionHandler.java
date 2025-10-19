@@ -1,7 +1,7 @@
 package com.example.hotel_booking.booking_service.exception;
 
 
-import com.example.hotel_booking.booking_service.DTO.ErrorResponse;
+import com.example.hotel_booking.booking_service.dto.ErrorResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;

@@ -1,8 +1,7 @@
 package com.example.hotel_booking.booking_service.client;
 
-
-import com.example.hotel_booking.booking_service.DTO.ConfirmAvailabilityRequest;
-import com.example.hotel_booking.booking_service.DTO.RoomDTO;
+import com.example.hotel_booking.booking_service.dto.ConfirmAvailabilityRequest;
+import com.example.hotel_booking.booking_service.dto.RoomDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -12,6 +11,7 @@ import reactor.util.retry.Retry;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -26,13 +26,28 @@ public class HotelServiceClient {
         this.webClient = webClientBuilder.build();
     }
 
+    // Преобразование DTO от Hotel Service в локальный DTO
+    private RoomDTO map(com.example.hotel_booking.hotel_service.dto.RoomDTO h) {
+        if (h == null) {
+            return null;
+        }
+        return RoomDTO.builder()
+                .id(h.getId())
+                .hotelId(h.getHotelId())
+                .number(h.getNumber())
+                .available(h.getAvailable())
+                .timesBooked(h.getTimesBooked())
+                .build();
+    }
+
     public RoomDTO getRoom(Long roomId) {
         try {
-            return webClient.get()
+            com.example.hotel_booking.hotel_service.dto.RoomDTO h = webClient.get()
                     .uri(baseUrl + "/api/rooms/{id}", roomId)
                     .retrieve()
-                    .bodyToMono(RoomDTO.class)
+                    .bodyToMono(com.example.hotel_booking.hotel_service.dto.RoomDTO.class)
                     .block();
+            return map(h);
         } catch (Exception e) {
             log.error("Error fetching room {}: {}", roomId, e.getMessage());
             return null;
@@ -41,15 +56,22 @@ public class HotelServiceClient {
 
     public List<RoomDTO> getRecommendedRooms() {
         try {
-            List<RoomDTO> rooms = webClient.get()
+            // Получаем список RoomDTO из Hotel Service
+            List<com.example.hotel_booking.hotel_service.dto.RoomDTO> hs = webClient.get()
                     .uri(baseUrl + "/api/rooms/recommend")
                     .retrieve()
-                    .bodyToFlux(RoomDTO.class)
+                    .bodyToFlux(com.example.hotel_booking.hotel_service.dto.RoomDTO.class)
                     .collectList()
                     .timeout(Duration.ofSeconds(5))
                     .retryWhen(Retry.backoff(3, Duration.ofSeconds(1)))
                     .block();
-            return rooms != null ? rooms : Collections.emptyList();
+            if (hs == null) {
+                return Collections.emptyList();
+            }
+            // Мапим в локальный RoomDTO
+            return hs.stream()
+                    .map(this::map)
+                    .collect(Collectors.toList());
         } catch (Exception e) {
             log.error("Error fetching recommended rooms: {}", e.getMessage());
             return Collections.emptyList();
@@ -68,7 +90,7 @@ public class HotelServiceClient {
                     .block();
             return Boolean.TRUE.equals(result);
         } catch (Exception e) {
-            log.error("Error confirming availability: {}", e.getMessage());
+            log.error("Error confirming availability for room {}: {}", roomId, e.getMessage());
             return false;
         }
     }
@@ -86,7 +108,7 @@ public class HotelServiceClient {
                     .retryWhen(Retry.backoff(3, Duration.ofSeconds(1)))
                     .block();
         } catch (Exception e) {
-            log.error("Error releasing room: {}", e.getMessage());
+            log.error("Error releasing room {}: {}", roomId, e.getMessage());
         }
     }
 }

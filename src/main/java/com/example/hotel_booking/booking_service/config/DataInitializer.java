@@ -1,11 +1,11 @@
 package com.example.hotel_booking.booking_service.config;
 
-import com.example.hotel_booking.booking_service.Entity.Booking;
-import com.example.hotel_booking.booking_service.Entity.BookingStatus;
-import com.example.hotel_booking.booking_service.Entity.Role;
-import com.example.hotel_booking.booking_service.Entity.User;
-import com.example.hotel_booking.booking_service.Repository.BookingRepository;
-import com.example.hotel_booking.booking_service.Repository.UserRepository;
+import com.example.hotel_booking.booking_service.entity.Booking;
+import com.example.hotel_booking.booking_service.entity.BookingStatus;
+import com.example.hotel_booking.booking_service.entity.Role;
+import com.example.hotel_booking.booking_service.entity.User;
+import com.example.hotel_booking.booking_service.repository.BookingRepository;
+import com.example.hotel_booking.booking_service.repository.UserRepository;
 import jakarta.annotation.PostConstruct;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
