@@ -1,36 +1,41 @@
 package com.example.hotel_booking.hotel_service.Controller;
 
-import com.example.hotel_booking.hotel_service.DTO.HotelDTO;
-import com.example.hotel_booking.hotel_service.Service.HotelService;
-import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import com.example.hotel_booking.hotel_service.DTO.HotelStatsDTO;
+import com.example.hotel_booking.hotel_service.DTO.OccupancyDTO;
+import com.example.hotel_booking.hotel_service.Service.HotelAnalyticsService;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import java.time.LocalDate;
 
+@Tag(name = "Hotel Analytics", description = "Analytics endpoints for hotel occupancy")
 @RestController
 @RequestMapping("/api/hotels")
-@Tag(name = "Hotel Management")
 public class HotelController {
-    private final HotelService hotelService;
 
-    public HotelController(HotelService hotelService) {
-        this.hotelService = hotelService;
+    private final HotelAnalyticsService analyticsService;
+
+    public HotelController(HotelAnalyticsService analyticsService) {
+        this.analyticsService = analyticsService;
     }
 
-    @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<HotelDTO> createHotel(@RequestBody @Valid HotelDTO hotelDTO) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(hotelService.createHotel(hotelDTO));
+    @GetMapping("/{id}/stats")
+    @Operation(summary = "Hotel stats", description = "Get per-room booking counts for given hotel")
+    public ResponseEntity<HotelStatsDTO> getHotelStats(
+            @PathVariable Long id,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        return ResponseEntity.ok(analyticsService.getHotelStats(id, from, to));
     }
 
-    @GetMapping
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
-    public ResponseEntity<List<HotelDTO>> getAllHotels() {
-        return ResponseEntity.ok(hotelService.getAllHotels());
+    @GetMapping("/stats/occupancy")
+    @Operation(summary = "Global occupancy", description = "Get overall occupancy percentage")
+    public ResponseEntity<OccupancyDTO> getGlobalOccupancy(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        return ResponseEntity.ok(analyticsService.getGlobalOccupancy(from, to));
     }
 }

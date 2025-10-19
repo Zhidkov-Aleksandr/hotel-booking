@@ -1,5 +1,8 @@
 package com.example.hotel_booking;
 
+import com.example.hotel_booking.booking_service.DTO.BookingDTO;
+import com.example.hotel_booking.booking_service.DTO.CreateBookingRequest;
+import com.example.hotel_booking.booking_service.Entity.BookingStatus;
 import com.example.hotel_booking.booking_service.Service.BookingService;
 import com.example.hotel_booking.booking_service.Service.HotelServiceClient;
 import org.junit.jupiter.api.Test;
@@ -7,6 +10,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDate;
+
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.util.AssertionErrors.assertEquals;
 
 @SpringBootTest
 @Transactional
