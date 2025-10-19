@@ -1,7 +1,7 @@
 package com.example.hotel_booking.booking_service.client;
 
 import com.example.hotel_booking.booking_service.dto.ConfirmAvailabilityRequest;
-import com.example.hotel_booking.booking_service.dto.RoomDTO;
+import com.example.hotel_booking.booking_service.dto.RoomDTO; // ✅ Используем DTO из booking_service
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -19,18 +19,16 @@ public class HotelServiceClient {
 
     private final WebClient webClient;
 
-    @Value("${hotel-service.url:https://hotel-service}")
+    @Value("${hotel-service.url:http://localhost:8081}") // ✅ Лучше сразу localhost для отладки
     private String baseUrl;
 
     public HotelServiceClient(WebClient.Builder webClientBuilder) {
         this.webClient = webClientBuilder.build();
     }
 
-    // Преобразование DTO от Hotel Service в локальный DTO
-    private RoomDTO map(com.example.hotel_booking.hotel_service.dto.RoomDTO h) {
-        if (h == null) {
-            return null;
-        }
+    // ✅ Внутреннее отображение — из "удалённого" DTO в локальный DTO
+    private RoomDTO map(RemoteRoomDTO h) {
+        if (h == null) return null;
         return RoomDTO.builder()
                 .id(h.getId())
                 .hotelId(h.getHotelId())
@@ -40,12 +38,34 @@ public class HotelServiceClient {
                 .build();
     }
 
+    // ✅ Локальный класс для данных, приходящих из hotel-service
+    private static class RemoteRoomDTO {
+        private Long id;
+        private Long hotelId;
+        private String number;
+        private Boolean available;
+        private Integer timesBooked;
+
+        // Геттеры и сеттеры (или можно добавить Lombok @Data)
+        public Long getId() { return id; }
+        public Long getHotelId() { return hotelId; }
+        public String getNumber() { return number; }
+        public Boolean getAvailable() { return available; }
+        public Integer getTimesBooked() { return timesBooked; }
+
+        public void setId(Long id) { this.id = id; }
+        public void setHotelId(Long hotelId) { this.hotelId = hotelId; }
+        public void setNumber(String number) { this.number = number; }
+        public void setAvailable(Boolean available) { this.available = available; }
+        public void setTimesBooked(Integer timesBooked) { this.timesBooked = timesBooked; }
+    }
+
     public RoomDTO getRoom(Long roomId) {
         try {
-            com.example.hotel_booking.hotel_service.dto.RoomDTO h = webClient.get()
+            RemoteRoomDTO h = webClient.get()
                     .uri(baseUrl + "/api/rooms/{id}", roomId)
                     .retrieve()
-                    .bodyToMono(com.example.hotel_booking.hotel_service.dto.RoomDTO.class)
+                    .bodyToMono(RemoteRoomDTO.class)
                     .block();
             return map(h);
         } catch (Exception e) {
@@ -56,22 +76,20 @@ public class HotelServiceClient {
 
     public List<RoomDTO> getRecommendedRooms() {
         try {
-            // Получаем список RoomDTO из Hotel Service
-            List<com.example.hotel_booking.hotel_service.dto.RoomDTO> hs = webClient.get()
+            List<RemoteRoomDTO> hs = webClient.get()
                     .uri(baseUrl + "/api/rooms/recommend")
                     .retrieve()
-                    .bodyToFlux(com.example.hotel_booking.hotel_service.dto.RoomDTO.class)
+                    .bodyToFlux(RemoteRoomDTO.class)
                     .collectList()
                     .timeout(Duration.ofSeconds(5))
                     .retryWhen(Retry.backoff(3, Duration.ofSeconds(1)))
                     .block();
-            if (hs == null) {
+
+            if (hs == null || hs.isEmpty()) {
                 return Collections.emptyList();
             }
-            // Мапим в локальный RoomDTO
-            return hs.stream()
-                    .map(this::map)
-                    .collect(Collectors.toList());
+
+            return hs.stream().map(this::map).collect(Collectors.toList());
         } catch (Exception e) {
             log.error("Error fetching recommended rooms: {}", e.getMessage());
             return Collections.emptyList();

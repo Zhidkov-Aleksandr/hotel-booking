@@ -1,7 +1,7 @@
 package com.example.hotel_booking.booking_service.service;
 
-import com.example.hotel_booking.hotel_service.dto.ConfirmAvailabilityRequest;
-import com.example.hotel_booking.hotel_service.dto.RoomDTO;
+import com.example.hotel_booking.booking_service.dto.ConfirmAvailabilityRequest;
+import com.example.hotel_booking.booking_service.dto.RoomDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -15,6 +15,7 @@ import java.util.List;
 @Service
 @Slf4j
 public class HotelServiceClient {
+
     private final WebClient webClient;
 
     @Value("${hotel-service.url}")
@@ -32,8 +33,7 @@ public class HotelServiceClient {
                     .retrieve()
                     .bodyToMono(Boolean.class)
                     .timeout(Duration.ofSeconds(5))
-                    .retryWhen(Retry.backoff(3, Duration.ofSeconds(1))
-                            .maxBackoff(Duration.ofSeconds(5)))
+                    .retryWhen(Retry.backoff(3, Duration.ofSeconds(1)).maxBackoff(Duration.ofSeconds(5)))
                     .block();
 
             return Boolean.TRUE.equals(result);
@@ -60,11 +60,10 @@ public class HotelServiceClient {
         }
     }
 
-    public List<com.example.hotel_booking.booking_service.dto.RoomDTO> getRecommendedRooms(String token) {
+    public List<RoomDTO> getRecommendedRooms() {
         try {
             return webClient.get()
                     .uri(hotelServiceUrl + "/api/rooms/recommend")
-                    .header("Authorization", "Bearer " + token)
                     .retrieve()
                     .bodyToFlux(RoomDTO.class)
                     .collectList()
@@ -72,6 +71,19 @@ public class HotelServiceClient {
         } catch (Exception e) {
             log.error("Failed to get recommended rooms: {}", e.getMessage());
             return Collections.emptyList();
+        }
+    }
+
+    public RoomDTO getRoom(Long roomId) {
+        try {
+            return webClient.get()
+                    .uri(hotelServiceUrl + "/api/rooms/{id}", roomId)
+                    .retrieve()
+                    .bodyToMono(RoomDTO.class)
+                    .block();
+        } catch (Exception e) {
+            log.error("Failed to get room {}: {}", roomId, e.getMessage());
+            return null;
         }
     }
 }

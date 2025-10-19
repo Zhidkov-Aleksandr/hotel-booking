@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -48,16 +49,25 @@ public class BookingService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "User not found"));
 
-        List<RoomDTO> candidates = request.isAutoSelect()
-                ? hotelServiceClient.getRecommendedRooms()
-                : List.of(hotelServiceClient.getRoom(request.getRoomId()));
-        if (candidates.isEmpty() || candidates.get(0) == null) {
+        // Получаем кандидатов
+        List<RoomDTO> candidates;
+        if (request.isAutoSelect()) {
+            candidates = hotelServiceClient.getRecommendedRooms();
+        } else {
+            RoomDTO room = hotelServiceClient.getRoom(request.getRoomId());
+            candidates = (room == null)
+                    ? Collections.emptyList()
+                    : Collections.singletonList(room);
+        }
+
+        if (candidates == null || candidates.isEmpty()) {
             throw new ResponseStatusException(NOT_FOUND, "No available rooms");
         }
+
         Long roomId = candidates.get(0).getId();
 
         List<Long> booked = bookingRepository.findBookedRoomIds(request.getStartDate(), request.getEndDate());
-        if (booked.contains(roomId)) {
+        if (booked != null && booked.contains(roomId)) {
             throw new ResponseStatusException(CONFLICT, "Room is already booked");
         }
 
@@ -77,15 +87,20 @@ public class BookingService {
                 roomId,
                 new ConfirmAvailabilityRequest(requestId, request.getStartDate(), request.getEndDate())
         );
+
         if (confirmed) {
             booking.setStatus(BookingStatus.CONFIRMED);
-            bookingRepository.save(booking);
         } else {
             booking.setStatus(BookingStatus.CANCELLED);
-            bookingRepository.save(booking);
-            hotelServiceClient.releaseRoom(roomId, requestId);
+            try {
+                hotelServiceClient.releaseRoom(roomId, requestId);
+            } catch (Exception ex) {
+                log.error("Error releasing room during compensation: {}", ex.getMessage());
+            }
             throw new ResponseStatusException(CONFLICT, "Room not available");
         }
+
+        bookingRepository.save(booking);
         return toDTO(booking);
     }
 
@@ -104,18 +119,27 @@ public class BookingService {
     public void cancelBooking(Long id, String username) {
         Booking booking = bookingRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Booking not found"));
+
         boolean isAdmin = userRepository.findByUsername(username)
                 .map(User::getRole)
                 .map(Enum::name)
                 .map("ADMIN"::equals)
                 .orElse(false);
+
         if (!isAdmin && !booking.getUser().getUsername().equals(username)) {
             throw new ResponseStatusException(FORBIDDEN, "Access denied");
         }
+
+        BookingStatus previousStatus = booking.getStatus();
         booking.setStatus(BookingStatus.CANCELLED);
         bookingRepository.save(booking);
-        if (booking.getStatus() == BookingStatus.CONFIRMED) {
-            hotelServiceClient.releaseRoom(booking.getRoomId(), booking.getRequestId());
+
+        if (previousStatus == BookingStatus.CONFIRMED) {
+            try {
+                hotelServiceClient.releaseRoom(booking.getRoomId(), booking.getRequestId());
+            } catch (Exception ex) {
+                log.error("Error releasing room after cancellation: {}", ex.getMessage());
+            }
         }
     }
 

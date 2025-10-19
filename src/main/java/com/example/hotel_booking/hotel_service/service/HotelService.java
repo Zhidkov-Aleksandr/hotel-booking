@@ -1,7 +1,7 @@
 package com.example.hotel_booking.hotel_service.service;
 
 import com.example.hotel_booking.hotel_service.dto.HotelDTO;
-import com.example.hotel_booking.hotel_service.Mapper.HotelMapper;
+import com.example.hotel_booking.hotel_service.mapper.HotelMapper;
 import com.example.hotel_booking.hotel_service.entity.Hotel;
 import com.example.hotel_booking.hotel_service.repository.HotelRepository;
 import lombok.extern.slf4j.Slf4j;

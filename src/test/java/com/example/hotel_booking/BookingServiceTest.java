@@ -10,20 +10,20 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.util.AssertionErrors.assertEquals;
 
-@SpringBootTest
+@SpringBootTest(properties = "spring.profiles.active=test")
 @Transactional
 class BookingServiceTest {
+
     @Autowired
     private BookingService bookingService;
 
@@ -46,8 +46,8 @@ class BookingServiceTest {
         BookingDTO result = bookingService.createBooking(request, "testuser");
 
         // Assert
-        assertNotNull(result);
-        assertEquals(BookingStatus.CONFIRMED.name(), result.getStatus());
+        assertNotNull(result, "Booking result should not be null");
+        assertEquals(BookingStatus.CONFIRMED.name(), result.getStatus(), "Booking should be confirmed");
     }
 
     @Test
@@ -57,13 +57,15 @@ class BookingServiceTest {
         request.setRoomId(1L);
         request.setStartDate(LocalDate.now());
         request.setEndDate(LocalDate.now().plusDays(2));
+        request.setAutoSelect(false);
 
         when(hotelServiceClient.confirmRoomAvailability(any(), any()))
                 .thenReturn(false);
 
         // Act & Assert
-        assertThrows(RuntimeException.class, () ->
-                bookingService.createBooking(request, "testuser"));
+        assertThrows(ResponseStatusException.class, () ->
+                        bookingService.createBooking(request, "testuser"),
+                "Should throw ResponseStatusException when room not available");
 
         verify(hotelServiceClient).releaseRoom(eq(1L), any());
     }

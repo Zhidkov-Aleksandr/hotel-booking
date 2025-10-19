@@ -2,7 +2,7 @@ package com.example.hotel_booking.hotel_service.service;
 
 import com.example.hotel_booking.hotel_service.dto.ConfirmAvailabilityRequest;
 import com.example.hotel_booking.hotel_service.dto.RoomDTO;
-import com.example.hotel_booking.hotel_service.Mapper.RoomMapper;
+import com.example.hotel_booking.hotel_service.mapper.RoomMapper;
 import com.example.hotel_booking.hotel_service.entity.Hotel;
 import com.example.hotel_booking.hotel_service.entity.Room;
 import com.example.hotel_booking.hotel_service.repository.HotelRepository;

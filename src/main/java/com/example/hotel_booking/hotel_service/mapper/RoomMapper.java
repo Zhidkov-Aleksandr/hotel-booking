@@ -1,4 +1,4 @@
-package com.example.hotel_booking.hotel_service.Mapper;
+package com.example.hotel_booking.hotel_service.mapper;
 
 
 import com.example.hotel_booking.hotel_service.dto.RoomDTO;
