@@ -1,3 +1,6 @@
+<img width="1536" height="1024" alt="image" src="https://github.com/user-attachments/assets/8f73354d-b93a-4ea3-8a29-92e118e2d8b4" />
+
+
 # Booking Service
 
 Проект `booking-service` — сервис управления бронированиями для отелей на Spring Boot.
@@ -85,6 +88,7 @@ booking-service/
 - Spring WebFlux (WebClient)
 - MapStruct
 - Lombok
+
 
 
 
