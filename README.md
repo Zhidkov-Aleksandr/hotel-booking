@@ -52,7 +52,6 @@ booking-service/
 ├── JwtService.java
 └── UserService.java
 
-
 ## Описание директорий
 
 - **client/** — HTTP-клиенты для взаимодействия с другими сервисами (например, Hotel Service).
@@ -74,6 +73,7 @@ booking-service/
 - Spring WebFlux (WebClient)
 - MapStruct
 - Lombok
+
 
 
 
