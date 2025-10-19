@@ -16,53 +16,23 @@
 Структура проекта организована следующим образом:
 
 ```text
-booking-service/
-└── src/
-    └── main/
-        └── java/
-            └── com/
-                └── hotel/
-                    └── booking/
-                        └── bookingservice/
-                            ├── BookingServiceApplication.java
-                            ├── client/
-                            │   └── HotelServiceClient.java
-                            ├── config/
-                            │   ├── OpenApiConfig.java
-                            │   ├── SecurityConfig.java
-                            │   └── WebClientConfig.java
-                            ├── controller/
-                            │   ├── BookingController.java
-                            │   └── UserController.java
-                            ├── dto/
-                            │   ├── AuthResponse.java
-                            │   ├── BookingDTO.java
-                            │   ├── ConfirmAvailabilityRequest.java
-                            │   ├── CreateBookingRequest.java
-                            │   ├── CreateUserRequest.java
-                            │   ├── ErrorResponse.java
-                            │   ├── LoginRequest.java
-                            │   ├── RegisterRequest.java
-                            │   ├── RoomDTO.java
-                            │   ├── UpdateUserRequest.java
-                            │   └── UserDTO.java
-                            ├── entity/
-                            │   ├── Booking.java
-                            │   ├── BookingStatus.java
-                            │   ├── Role.java
-                            │   └── User.java
-                            ├── exception/
-                            │   └── GlobalExceptionHandler.java
-                            ├── repository/
-                            │   ├── BookingRepository.java
-                            │   └── UserRepository.java
-                            ├── security/
-                            │   ├── JwtAuthenticationFilter.java
-                            │   └── JwtUtil.java
-                            └── service/
-                                ├── BookingService.java
-                                ├── JwtService.java
-                                └── UserService.java
+hotel-booking/
+ ├── pom.xml                   # корневой pom с модулями
+ ├── common/
+ │    ├── pom.xml
+ │    └── src/main/java/com/example/hotel_booking/common/ (DTO и утилиты)
+ ├── eureka-server/
+ │    ├── pom.xml
+ │    └── src/main/java/com/example/eurekaserver/ (сервис Eureka)
+ ├── api-gateway/
+ │    ├── pom.xml
+ │    └── src/main/java/com/example/apigateway/ (API Gateway)
+ ├── hotel-service/
+ │    ├── pom.xml
+ │    └── src/main/java/com/example/hotelservice/ (логика и сущности отеля)
+ └── booking-service/
+      ├── pom.xml
+      └── src/main/java/com/example/bookingservice/ (логика бронирования)
 
 ```
 
@@ -88,6 +58,7 @@ booking-service/
 - Spring WebFlux (WebClient)
 - MapStruct
 - Lombok
+
 
 
 
