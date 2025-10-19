@@ -3,7 +3,7 @@ package com.example.hotel_booking.booking_service.Service;
 import com.example.hotel_booking.booking_service.client.HotelServiceClient;
 import com.example.hotel_booking.booking_service.DTO.*;
 import com.example.hotel_booking.booking_service.Entity.*;
-import com.example.hotel_booking.booking_service.Repository.;
+import com.example.hotel_booking.booking_service.Repository.*;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
