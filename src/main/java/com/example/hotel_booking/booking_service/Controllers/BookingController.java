@@ -55,13 +55,13 @@ public class BookingController {
 
     @GetMapping("/all")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Get all bookings (Admin only)",
-            description = "Admin can view all bookings with pagination")
+    @Operation(summary = "Get all bookings (Admin only)", description = "Admin can view all bookings with pagination")
     public ResponseEntity<Page<BookingDTO>> getAllBookings(
             @PageableDefault(size = 20) Pageable pageable) {
         Page<BookingDTO> page = bookingService.getAllBookings(pageable);
         return ResponseEntity.ok(page);
     }
+
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('USER','ADMIN')")

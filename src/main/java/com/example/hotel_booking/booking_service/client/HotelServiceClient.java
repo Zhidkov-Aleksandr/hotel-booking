@@ -1,8 +1,6 @@
 package com.example.hotel_booking.booking_service.client;
 
 
-package com.hotel.booking.bookingservice.client;
-
 import com.example.hotel_booking.booking_service.DTO.ConfirmAvailabilityRequest;
 import com.example.hotel_booking.booking_service.DTO.RoomDTO;
 import lombok.extern.slf4j.Slf4j;

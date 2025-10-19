@@ -91,10 +91,11 @@ public class BookingService {
     }
 
     @Transactional(readOnly = true)
-    public Page<BookingDTO> getUserBookings(String username, Pageable pageable) {
-        return bookingRepository.findByUserUsername(username, pageable)
-                .map(this::toDTO);
+    public Page<BookingDTO> getAllBookings(Pageable pageable) {
+        Page<Booking> page = bookingRepository.findAll(pageable);
+        return page.map(this::mapToDTO);
     }
+
 
     @Transactional(readOnly = true)
     public Page<BookingDTO> getAllBookings(Pageable pageable) {

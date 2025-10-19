@@ -1,7 +1,5 @@
 package com.example.hotel_booking.hotel_service.Service;
 
-package com.hotel.booking.hotelservice.service;
-
 import com.example.hotel_booking.hotel_service.DTO.HotelStatsDTO;
 import com.example.hotel_booking.hotel_service.DTO.OccupancyDTO;
 import com.example.hotel_booking.hotel_service.repository.BookingRepository;
