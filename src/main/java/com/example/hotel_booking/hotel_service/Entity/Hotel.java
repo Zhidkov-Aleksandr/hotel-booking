@@ -1,9 +1,8 @@
-package com.example.hotel_booking;
+package com.example.hotel_booking.hotel_service.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
 import java.util.*;
-import com.example.hotel_booking.Room;
 
 @Entity
 @Table(name = "hotels")
@@ -23,5 +22,5 @@ public class Hotel {
     private String address;
 
     @OneToMany(mappedBy = "hotel", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Room> rooms = new ArrayList<>();
+    private List<com.example.hotel_booking.hotel_service.entity.Room> rooms = new ArrayList<>();
 }

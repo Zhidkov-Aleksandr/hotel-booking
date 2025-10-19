@@ -1,5 +1,7 @@
-package com.example.hotel_booking;
+package com.example.hotel_booking.hotel_service.Mapper;
 
+import com.example.hotel_booking.hotel_service.DTO.RoomDTO;
+import com.example.hotel_booking.hotel_service.entity.Room;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 

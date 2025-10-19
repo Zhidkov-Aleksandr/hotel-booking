@@ -1,4 +1,4 @@
-package com.example.hotel_booking;
+package com.example.hotel_booking.hotel_service.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
