@@ -5,52 +5,99 @@
 ## Структура проекта
 
 booking-service/
+
 └── src/
+
 └── main/
+
 └── java/
+
 └── com/
+
 └── hotel/
+
 └── booking/
+
 └── bookingservice/
+
 ├── BookingServiceApplication.java
+
 ├── client/
+
 │ └── HotelServiceClient.java
+
 ├── config/
+
 │ ├── OpenApiConfig.java
+
 │ ├── SecurityConfig.java
+
 │ └── WebClientConfig.java
+
 ├── controller/
+
 │ ├── BookingController.java
+
 │ └── UserController.java
+
 ├── dto/
+
 │ ├── AuthResponse.java
+
 │ ├── BookingDTO.java
+
 │ ├── ConfirmAvailabilityRequest.java
+
 │ ├── CreateBookingRequest.java
+
 │ ├── CreateUserRequest.java
+
 │ ├── ErrorResponse.java
+
 │ ├── LoginRequest.java
+
 │ ├── RegisterRequest.java
+
 │ ├── RoomDTO.java
+
 │ ├── UpdateUserRequest.java
+
 │ └── UserDTO.java
+
 ├── entity/
+
 │ ├── Booking.java
+
 │ ├── BookingStatus.java
+
 │ ├── Role.java
+
 │ └── User.java
+
 ├── exception/
+
 │ └── GlobalExceptionHandler.java
+
 ├── repository/
+
 │ ├── BookingRepository.java
+
 │ └── UserRepository.java
+
 ├── security/
+
 │ ├── JwtAuthenticationFilter.java
+
 │ └── JwtUtil.java
+
 └── service/
+
 ├── BookingService.java
+
 ├── JwtService.java
+
 └── UserService.java
+
 
 ## Описание директорий
 
@@ -73,6 +120,7 @@ booking-service/
 - Spring WebFlux (WebClient)
 - MapStruct
 - Lombok
+
 
 
 
