@@ -1,5 +1,8 @@
 package com.example.hotel_booking.booking_service.client;
 
+
+package com.hotel.booking.bookingservice.client;
+
 import com.example.hotel_booking.booking_service.DTO.ConfirmAvailabilityRequest;
 import com.example.hotel_booking.booking_service.DTO.RoomDTO;
 import lombok.extern.slf4j.Slf4j;
@@ -18,51 +21,30 @@ public class HotelServiceClient {
 
     private final WebClient webClient;
 
-    @Value("${hotel-service.url:http://hotel-service}")
-    private String hotelServiceUrl;
+    @Value("${hotel-service.url:https://hotel-service}")
+    private String baseUrl;
 
     public HotelServiceClient(WebClient.Builder webClientBuilder) {
         this.webClient = webClientBuilder.build();
     }
 
-    public boolean confirmRoomAvailability(Long roomId, ConfirmAvailabilityRequest request) {
+    public RoomDTO getRoom(Long roomId) {
         try {
-            Boolean result = webClient.post()
-                    .uri(hotelServiceUrl + "/api/rooms/{id}/confirm-availability", roomId)
-                    .bodyValue(request)
+            return webClient.get()
+                    .uri(baseUrl + "/api/rooms/{id}", roomId)
                     .retrieve()
-                    .bodyToMono(Boolean.class)
-                    .timeout(Duration.ofSeconds(5))
-                    .retryWhen(Retry.backoff(3, Duration.ofSeconds(1)))
-                    .block();
-            return Boolean.TRUE.equals(result);
-        } catch (Exception e) {
-            log.error("Error confirming room availability: {}", e.getMessage());
-            return false;
-        }
-    }
-
-    public void releaseRoom(Long roomId, String requestId) {
-        try {
-            webClient.post()
-                    .uri(uriBuilder -> uriBuilder
-                            .path(hotelServiceUrl + "/api/rooms/{id}/release")
-                            .queryParam("requestId", requestId)
-                            .build(roomId))
-                    .retrieve()
-                    .bodyToMono(Void.class)
-                    .timeout(Duration.ofSeconds(5))
-                    .retryWhen(Retry.backoff(3, Duration.ofSeconds(1)))
+                    .bodyToMono(RoomDTO.class)
                     .block();
         } catch (Exception e) {
-            log.error("Error releasing room: {}", e.getMessage());
+            log.error("Error fetching room {}: {}", roomId, e.getMessage());
+            return null;
         }
     }
 
     public List<RoomDTO> getRecommendedRooms() {
         try {
             List<RoomDTO> rooms = webClient.get()
-                    .uri(hotelServiceUrl + "/api/rooms/recommend")
+                    .uri(baseUrl + "/api/rooms/recommend")
                     .retrieve()
                     .bodyToFlux(RoomDTO.class)
                     .collectList()
@@ -76,20 +58,37 @@ public class HotelServiceClient {
         }
     }
 
-    public List<RoomDTO> getAvailableRooms() {
+    public boolean confirmRoomAvailability(Long roomId, ConfirmAvailabilityRequest req) {
         try {
-            List<RoomDTO> rooms = webClient.get()
-                    .uri(hotelServiceUrl + "/api/rooms")
+            Boolean result = webClient.post()
+                    .uri(baseUrl + "/api/rooms/{id}/confirm-availability", roomId)
+                    .bodyValue(req)
                     .retrieve()
-                    .bodyToFlux(RoomDTO.class)
-                    .collectList()
+                    .bodyToMono(Boolean.class)
                     .timeout(Duration.ofSeconds(5))
                     .retryWhen(Retry.backoff(3, Duration.ofSeconds(1)))
                     .block();
-            return rooms != null ? rooms : Collections.emptyList();
+            return Boolean.TRUE.equals(result);
         } catch (Exception e) {
-            log.error("Error fetching available rooms: {}", e.getMessage());
-            return Collections.emptyList();
+            log.error("Error confirming availability: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    public void releaseRoom(Long roomId, String requestId) {
+        try {
+            webClient.post()
+                    .uri(uriBuilder -> uriBuilder
+                            .path(baseUrl + "/api/rooms/{id}/release")
+                            .queryParam("requestId", requestId)
+                            .build(roomId))
+                    .retrieve()
+                    .bodyToMono(Void.class)
+                    .timeout(Duration.ofSeconds(5))
+                    .retryWhen(Retry.backoff(3, Duration.ofSeconds(1)))
+                    .block();
+        } catch (Exception e) {
+            log.error("Error releasing room: {}", e.getMessage());
         }
     }
 }

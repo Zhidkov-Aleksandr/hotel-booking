@@ -1,7 +1,10 @@
 package com.example.hotel_booking.booking_service.Service;
 
+import com.example.hotel_booking.booking_service.client.HotelServiceClient;
 import com.example.hotel_booking.booking_service.DTO.BookingDTO;
+import com.example.hotel_booking.booking_service.DTO.ConfirmAvailabilityRequest;
 import com.example.hotel_booking.booking_service.DTO.CreateBookingRequest;
+import com.example.hotel_booking.booking_service.DTO.RoomDTO;
 import com.example.hotel_booking.booking_service.Entity.Booking;
 import com.example.hotel_booking.booking_service.Entity.BookingStatus;
 import com.example.hotel_booking.booking_service.Entity.User;
@@ -15,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 import static org.springframework.http.HttpStatus.*;
@@ -40,11 +44,25 @@ public class BookingService {
         if (request.getEndDate().isBefore(request.getStartDate().plusDays(1))) {
             throw new ResponseStatusException(BAD_REQUEST, "End date must be after start date");
         }
-        String requestId = UUID.randomUUID().toString();
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "User not found"));
-        Long roomId = bookingRepository
-                .selectRoomId(request, hotelServiceClient, user);
+
+        // Получаем candidate rooms
+        List<RoomDTO> candidates = request.isAutoSelect()
+                ? hotelServiceClient.getRecommendedRooms()
+                : List.of(hotelServiceClient.getRoom(request.getRoomId()));
+        if (candidates.isEmpty()) {
+            throw new ResponseStatusException(NOT_FOUND, "No available rooms");
+        }
+        Long roomId = candidates.get(0).getId();
+
+        // Проверка конфликтов локально
+        List<Long> booked = bookingRepository.findBookedRoomIds(request.getStartDate(), request.getEndDate());
+        if (booked.contains(roomId)) {
+            throw new ResponseStatusException(CONFLICT, "Room is already booked");
+        }
+
+        String requestId = UUID.randomUUID().toString();
         Booking booking = Booking.builder()
                 .user(user)
                 .roomId(roomId)
@@ -55,8 +73,11 @@ public class BookingService {
                 .requestId(requestId)
                 .build();
         booking = bookingRepository.save(booking);
-        boolean confirmed = hotelServiceClient.confirmRoomAvailability(roomId,
-                new ConfirmAvailabilityRequest(requestId, request.getStartDate(), request.getEndDate()));
+
+        boolean confirmed = hotelServiceClient.confirmRoomAvailability(
+                roomId,
+                new ConfirmAvailabilityRequest(requestId, request.getStartDate(), request.getEndDate())
+        );
         if (confirmed) {
             booking.setStatus(BookingStatus.CONFIRMED);
             bookingRepository.save(booking);
@@ -66,26 +87,29 @@ public class BookingService {
             hotelServiceClient.releaseRoom(roomId, requestId);
             throw new ResponseStatusException(CONFLICT, "Room not available");
         }
-        return map(booking);
+        return toDTO(booking);
     }
 
     @Transactional(readOnly = true)
     public Page<BookingDTO> getUserBookings(String username, Pageable pageable) {
         return bookingRepository.findByUserUsername(username, pageable)
-                .map(this::map);
+                .map(this::toDTO);
     }
 
     @Transactional(readOnly = true)
     public Page<BookingDTO> getAllBookings(Pageable pageable) {
         return bookingRepository.findAll(pageable)
-                .map(this::map);
+                .map(this::toDTO);
     }
 
     public void cancelBooking(Long id, String username) {
         Booking booking = bookingRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Booking not found"));
-        if (!booking.getUser().getUsername().equals(username)
-                && !userRepository.isAdmin(username)) {
+        boolean isAdmin = userRepository.findByUsername(username)
+                .map(User::getRole)
+                .map(r -> r.name().equals("ADMIN"))
+                .orElse(false);
+        if (!isAdmin && !booking.getUser().getUsername().equals(username)) {
             throw new ResponseStatusException(FORBIDDEN, "Access denied");
         }
         if (booking.getStatus() == BookingStatus.CONFIRMED) {
@@ -98,7 +122,7 @@ public class BookingService {
         }
     }
 
-    private BookingDTO map(Booking b) {
+    private BookingDTO toDTO(Booking b) {
         return BookingDTO.builder()
                 .id(b.getId())
                 .userId(b.getUser().getId())

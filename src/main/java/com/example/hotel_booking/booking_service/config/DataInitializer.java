@@ -1,15 +1,13 @@
 package com.example.hotel_booking.booking_service.config;
 
-package com.hotel.booking.bookingservice.config;
-
-import com.example.hotel_booking.booking_service.Entity.*;
-import org.springframework.stereotype.Repository.BookingRepository;
-import org.springframework.stereotype.Repository.UserRepository;
-import com.example.hotel_booking.booking_service.Entity.Hotel;
-import com.example.hotel_booking.booking_service.Entity.Room;
-import com.example.hotel_booking.booking_service.Repository.HotelRepository;
-import com.example.hotel_booking.booking_service.Repository.RoomRepository;
+import com.example.hotel_booking.booking_service.Entity.Booking;
+import com.example.hotel_booking.booking_service.Entity.BookingStatus;
+import com.example.hotel_booking.booking_service.Entity.Role;
+import com.example.hotel_booking.booking_service.Entity.User;
+import com.example.hotel_booking.booking_service.Repository.BookingRepository;
+import com.example.hotel_booking.booking_service.Repository.UserRepository;
 import jakarta.annotation.PostConstruct;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,31 +18,28 @@ public class DataInitializer {
 
     private final UserRepository userRepo;
     private final BookingRepository bookingRepo;
-    private final HotelRepository hotelRepo;
-    private final RoomRepository roomRepo;
+    private final PasswordEncoder passwordEncoder;
 
     public DataInitializer(UserRepository userRepo,
                            BookingRepository bookingRepo,
-                           HotelRepository hotelRepo,
-                           RoomRepository roomRepo) {
+                           PasswordEncoder passwordEncoder) {
         this.userRepo = userRepo;
         this.bookingRepo = bookingRepo;
-        this.hotelRepo = hotelRepo;
-        this.roomRepo = roomRepo;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @PostConstruct
     @Transactional
     public void init() {
-        User admin = userRepo.save(new User(null, "admin", "{bcrypt}$2a$10$...", Role.ADMIN, null));
-        User user = userRepo.save(new User(null, "user", "{bcrypt}$2a$10$...", Role.USER, null));
+        if (userRepo.count() == 0) {
+            User admin = userRepo.save(new User(null, "admin",
+                    passwordEncoder.encode("adminpass"), Role.ADMIN, null));
+            User user = userRepo.save(new User(null, "user",
+                    passwordEncoder.encode("userpass"), Role.USER, null));
 
-        Hotel h1 = hotelRepo.save(new Hotel(null, "Hotel A", "Address A", null));
-        Room r1 = roomRepo.save(new Room(null, h1, "101", true, 0, null, null));
-        Room r2 = roomRepo.save(new Room(null, h1, "102", true, 0, null, null));
-
-        bookingRepo.save(new Booking(null, user, r1.getId(),
-                LocalDate.now().plusDays(1), LocalDate.now().plusDays(3),
-                BookingStatus.CONFIRMED, null, null));
+            bookingRepo.save(new Booking(null, user, 1L,
+                    LocalDate.now().plusDays(1), LocalDate.now().plusDays(3),
+                    BookingStatus.CONFIRMED, null, "seed-req-1"));
+        }
     }
 }
