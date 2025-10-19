@@ -60,7 +60,7 @@ public class HotelServiceClient {
         }
     }
 
-    public List<RoomDTO> getRecommendedRooms(String token) {
+    public List<com.example.hotel_booking.booking_service.DTO.RoomDTO> getRecommendedRooms(String token) {
         try {
             return webClient.get()
                     .uri(hotelServiceUrl + "/api/rooms/recommend")

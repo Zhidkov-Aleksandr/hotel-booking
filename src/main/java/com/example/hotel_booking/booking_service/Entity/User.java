@@ -1,12 +1,16 @@
 package com.example.hotel_booking.booking_service.Entity;
 
+
+
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.context.annotation.Role;
-import org.springframework.data.annotation.Id;
+import com.example.hotel_booking.booking_service.Entity.Role;
+
+
+
 
 import java.util.ArrayList;
 import java.util.List;

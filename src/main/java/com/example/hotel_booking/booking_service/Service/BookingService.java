@@ -1,24 +1,28 @@
 package com.example.hotel_booking.booking_service.Service;
 
-import com.example.hotel_booking.booking_service.Entity.Booking;
-import com.example.hotel_booking.booking_service.Entity.BookingStatus;
-import com.example.hotel_booking.booking_service.Entity.User;
-import com.example.hotel_booking.booking_service.Repository.BookingRepository;
-import com.example.hotel_booking.booking_service.Repository.UserRepository;
-import com.example.hotel_booking.hotel_service.DTO.ConfirmAvailabilityRequest;
+import com.example.hotel_booking.booking_service.client.HotelServiceClient;
+import com.example.hotel_booking.booking_service.DTO.*;
+import com.example.hotel_booking.booking_service.Entity.*;
+import com.example.hotel_booking.booking_service.Repository.;
+
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
 @Slf4j
 @Transactional
 public class BookingService {
+
     private final BookingRepository bookingRepository;
     private final UserRepository userRepository;
     private final HotelServiceClient hotelServiceClient;
@@ -32,7 +36,14 @@ public class BookingService {
     }
 
     public BookingDTO createBooking(CreateBookingRequest request, String username) {
+        // Валидация дат
+        if (request.getEndDate().isBefore(request.getStartDate()) ||
+                request.getEndDate().isEqual(request.getStartDate())) {
+            throw new RuntimeException("End date must be after start date");
+        }
+
         String requestId = UUID.randomUUID().toString();
+        log.info("Creating booking with requestId: {}", requestId);
 
         // Проверка идемпотентности
         Optional<Booking> existing = bookingRepository.findByRequestId(requestId);
@@ -45,22 +56,29 @@ public class BookingService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         Long roomId;
+
+        // Автоподбор или выбор номера
         if (request.isAutoSelect()) {
-            // Автоподбор комнаты
-            List<RoomDTO> recommendedRooms = hotelServiceClient.getRecommendedRooms(getCurrentToken());
+            log.info("Auto-selecting room for user: {}", username);
+            List<RoomDTO> recommendedRooms = hotelServiceClient.getRecommendedRooms();
             if (recommendedRooms.isEmpty()) {
                 throw new RuntimeException("No available rooms");
             }
             roomId = recommendedRooms.get(0).getId();
+            log.info("Selected room: {}", roomId);
         } else {
+            if (request.getRoomId() == null) {
+                throw new RuntimeException("Room ID is required when autoSelect is false");
+            }
             roomId = request.getRoomId();
         }
 
-        // Проверка конфликтов
+        // Проверка конфликтов бронирования
         List<Booking> conflicts = bookingRepository.findConflictingBookings(
                 roomId, request.getStartDate(), request.getEndDate());
 
         if (!conflicts.isEmpty()) {
+            log.warn("Room {} is already booked for selected dates", roomId);
             throw new RuntimeException("Room is already booked for selected dates");
         }
 
@@ -76,25 +94,55 @@ public class BookingService {
                 .build();
 
         booking = bookingRepository.save(booking);
-        log.info("Booking created with status PENDING: {}", booking.getId());
+        log.info("Booking {} created with status PENDING for user: {}", booking.getId(), username);
 
         // Шаг 2: Подтверждение доступности у Hotel Service
         ConfirmAvailabilityRequest confirmRequest = new ConfirmAvailabilityRequest(
                 requestId, request.getStartDate(), request.getEndDate());
 
-        boolean confirmed = hotelServiceClient.confirmRoomAvailability(roomId, confirmRequest);
+        boolean confirmed = false;
+        try {
+            confirmed = hotelServiceClient.confirmRoomAvailability(roomId, confirmRequest);
+        } catch (Exception e) {
+            log.error("Error confirming room availability: {}", e.getMessage());
+        }
 
         if (confirmed) {
+            // Успешное подтверждение
             booking.setStatus(BookingStatus.CONFIRMED);
             bookingRepository.save(booking);
-            log.info("Booking confirmed: {}", booking.getId());
+            log.info("Booking {} confirmed successfully", booking.getId());
         } else {
             // Компенсация: отмена бронирования
             booking.setStatus(BookingStatus.CANCELLED);
             bookingRepository.save(booking);
-            hotelServiceClient.releaseRoom(roomId, requestId);
-            log.warn("Booking cancelled due to unavailable room: {}", booking.getId());
-            throw new RuntimeException("Room is not available");
+
+            // Попытка освободить комнату (компенсирующая транзакция)
+            try {
+                hotelServiceClient.releaseRoom(roomId, requestId);
+                log.info("Compensation: Room {} released for requestId: {}", roomId, requestId);
+            } catch (Exception e) {
+                log.error("Error releasing room during compensation: {}", e.getMessage());
+            }
+
+            log.warn("Booking {} cancelled due to unavailable room", booking.getId());
+            throw new RuntimeException("Room is not available for selected dates");
+        }
+
+        return mapToDTO(booking);
+    }
+
+    @Transactional(readOnly = true)
+    public BookingDTO getBookingById(Long id, String username) {
+        Booking booking = bookingRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Booking not found"));
+
+        // Проверка прав доступа
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        boolean isAdmin = auth.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_ADMIN"));
+
+        if (!isAdmin && !booking.getUser().getUsername().equals(username)) {
+            throw new RuntimeException("Access denied");
         }
 
         return mapToDTO(booking);
@@ -110,22 +158,44 @@ public class BookingService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
+    public List<BookingDTO> getAllBookings() {
+        return bookingRepository.findAll().stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
+    }
+
     public void cancelBooking(Long bookingId, String username) {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new RuntimeException("Booking not found"));
 
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        // Проверка прав доступа
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        boolean isAdmin = auth.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_ADMIN"));
 
-        if (!booking.getUser().getId().equals(user.getId())) {
+        if (!isAdmin && !booking.getUser().getUsername().equals(username)) {
             throw new RuntimeException("Access denied");
+        }
+
+        if (booking.getStatus() == BookingStatus.CANCELLED) {
+            throw new RuntimeException("Booking is already cancelled");
         }
 
         if (booking.getStatus() == BookingStatus.CONFIRMED) {
             booking.setStatus(BookingStatus.CANCELLED);
             bookingRepository.save(booking);
-            hotelServiceClient.releaseRoom(booking.getRoomId(), booking.getRequestId());
-            log.info("Booking cancelled: {}", bookingId);
+
+            // Освобождение номера
+            try {
+                hotelServiceClient.releaseRoom(booking.getRoomId(), booking.getRequestId());
+                log.info("Booking {} cancelled and room {} released", bookingId, booking.getRoomId());
+            } catch (Exception e) {
+                log.error("Error releasing room after cancellation: {}", e.getMessage());
+            }
+        } else {
+            booking.setStatus(BookingStatus.CANCELLED);
+            bookingRepository.save(booking);
+            log.info("Booking {} cancelled", bookingId);
         }
     }
 
@@ -140,13 +210,5 @@ public class BookingService {
                 .createdAt(booking.getCreatedAt())
                 .build();
     }
-
-    private String getCurrentToken() {
-        // Получение токена из SecurityContext
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth instanceof JwtAuthenticationToken) {
-            return ((JwtAuthenticationToken) auth).getToken().getTokenValue();
-        }
-        return null;
-    }
 }
+
