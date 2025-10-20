@@ -24,7 +24,7 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
-                    <mainClass>com.example.hotel_booking.eureka_server.EurekaServerApplication</mainClass>
+                    <mainClass>com.example.eureka_server.EurekaServerApplication</mainClass>
                 </configuration>
             </plugin>
             <plugin>
