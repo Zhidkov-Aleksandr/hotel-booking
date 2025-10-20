@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 
+
 @Tag(name = "Hotel Analytics", description = "Analytics endpoints for hotel occupancy")
 @RestController
 @RequestMapping("/api/hotels")
