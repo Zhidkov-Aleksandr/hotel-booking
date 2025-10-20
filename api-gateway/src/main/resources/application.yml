@@ -5,27 +5,33 @@ spring:
   application:
     name: api-gateway
 
-  cloud:
-    gateway:
-      discovery:
-        locator:
-          enabled: true
-          lower-case-service-id: true
-
-      routes:
-        - id: booking-service
-          uri: lb://booking-service
-          predicates:
-            - Path=/api/bookings/**, /user/**, /booking/**
-          filters:
-            - RewritePath=/api/bookings/(?<segment>.*), /$\{segment}
-
-        - id: hotel-service
-          uri: lb://hotel-service
-          predicates:
-            - Path=/api/hotels/**, /api/rooms/**
-
 eureka:
   client:
     service-url:
       defaultZone: http://localhost:8761/eureka/
+
+# Простейшая маршрутизация:
+spring:
+  cloud:
+    gateway:
+      default-filters:
+        - RemoveRequestHeader=Cookie
+        - PreserveHostHeader
+      routes:
+        - id: booking-service
+          uri: lb://booking-service
+          predicates:
+            - Path=/api/bookings/**,/api/booking/**,/api/user/**,/api/auth/**
+          filters:
+            - StripPrefix=1
+            # JWT просто прокидываем как есть
+        - id: hotel-service
+          uri: lb://hotel-service
+          predicates:
+            - Path=/api/hotels/**,/api/rooms/**
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

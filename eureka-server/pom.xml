@@ -9,7 +9,9 @@
         <artifactId>hotel-booking</artifactId>
         <version>0.0.1-SNAPSHOT</version>
     </parent>
+
     <artifactId>eureka-server</artifactId>
+    <name>eureka-server</name>
 
     <dependencies>
             <dependency>
