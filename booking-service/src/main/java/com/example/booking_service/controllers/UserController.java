@@ -1,7 +1,7 @@
 package com.example.booking_service.controllers;
 
 import com.example.booking_service.dto.*;
-import com.example.hotel_booking.booking_service.dto.*;
+import com.example.booking_service.dto.*;
 import com.example.booking_service.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;

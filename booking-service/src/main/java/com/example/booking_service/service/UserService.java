@@ -1,7 +1,6 @@
 package com.example.booking_service.service;
 
 import com.example.booking_service.dto.*;
-import com.example.hotel_booking.booking_service.dto.*;
 import com.example.booking_service.entity.Role;
 import com.example.booking_service.entity.User;
 import com.example.booking_service.JWT.JwtService;
